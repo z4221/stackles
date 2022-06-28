@@ -1,7 +1,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdint.h>
 
 int64_t* stack;

@@ -66,125 +66,192 @@ while True:
 
 print(tokens)
 
-print("Generating code...")
-finalCode = "#include \"stackmachine.c\"\n\n"
+print("Generating AST...")
+
+
+def exitPrintTokens(index):
+    print("Error! token: "+str(tokens[index])+" number: "+str(index))
+    for i in range(index-2,index+3):
+        print(str(i)+" | "+str(tokens[i]))
+    exit(1)
+
+ast = []
+astIndex = 0
+
+functionTable = [
+        "dumpStack",
+        "popPrint",
+        ]
+
+
+def parseToken(temp, index):
+
+    if tokens[index].isnumeric():
+        temp["ast"].append({
+                    "type": "push",
+                    "value": int(tokens[index])
+                })
+        index += 1
+        return (temp, index)
+
+    if tokens[index] == "*":
+        temp["ast"].append({
+                "type": "operation",
+                "operation": "*",
+            })
+        index += 1
+        return (temp, index)
+
+    if tokens[index] == "/":
+        temp["ast"].append({
+                "type": "operation",
+                "operation": "/",
+            })
+        index += 1
+        return (temp, index)
+
+    if tokens[index] == "+":
+        temp["ast"].append({
+                "type": "operation",
+                "operation": "+",
+            })
+        index += 1
+        return (temp, index)
+
+    if tokens[index] == "-":
+        temp["ast"].append({
+                "type": "operation",
+                "operation": "-",
+            })
+        index += 1
+        return (temp, index)
+
+    functionTable.append("cf_"+tokens[index])
+    temp["ast"].append({
+            "type": "functionCall",
+            "function": tokens[index],
+        })
+    index += 1
+    return (temp, index)
+
+
 
 index = 0
-returnStack      = True
-definingFunction = False
-functionName     = ""
 tokenLength = len(tokens)
 while True:
     if index >= tokenLength:
         break
 
-    elif tokens[index] == "func":
-        if definingFunction == True:
-            print("Cannot define function inside another function!")
+    if tokens[index] == "func":
+        temp = {}
+        temp["type"] = "function"
+        index += 1
+        temp["name"] = tokens[index]
+        if functionTable.__contains__(tokens[index]):
+            print("Error! redefining symbol: "+str(tokens[index]))
             exit(1)
+        index += 1
+        temp["take"] = tokens[index]
+        index += 1
+        if tokens[index] != ">":
+            exitPrintTokens(index)
+        index += 1
+        temp["return"] = tokens[index]
+        index += 1
+        if tokens[index] != ":":
+            exitPrintTokens(index)
+        index += 1
+        temp["stack"] = tokens[index]
+        index += 1
+        if tokens[index] != "begin":
+            exitPrintTokens(index)
+        index += 1
 
-        definingFunction = True
-        functionName = tokens[index+1]
-        if tokens[index+1] == "main":
-            finalCode += "int "
-            finalCode += tokens[index+1]
-            finalCode += "() {\ninitRuntime(" + tokens[index+6] + ");\n"
-            if tokens[index+2] != "0":
-                print("Error! main cannot take arguments!");
+        temp["ast"] = []
+        while True:
+            if index >= tokenLength:
+                print("Function never closed! ",end="")
+                print(temp["name"])
                 exit(1)
 
-            if tokens[index+4] == "0":
-                returnStack = False
-            elif tokens[index+4] == "1":
-                returnStack = True
-            else:
-                print("Error! can only return one item from the stack in main")
-                exit(1)
-        else:
-            finalCode += "void "
-            finalCode += tokens[index+1]
-            finalCode += "() {\n"
+            if tokens[index] == "endfunc":
+                break
 
-        index += 8
+            temp, index = parseToken(temp,index)
 
-    elif tokens[index] == "endfunc":
-        if definingFunction == False:
-            print("endfunc without func!")
-            exit(1)
-        definingFunction = False
-        if functionName == "main":
-            if returnStack == True:
-                finalCode += "return stack[stackPtr];\n"
-            else:
-                finalCode += "return 0;\n"
-        finalCode += "}\n"
+
+        ast.append(temp)
         index += 1
 
-    elif tokens[index] == "end":
-        finalCode += "}\n"
-        index += 1
+pprint(ast)
+print()
+pprint(functionTable)
 
-    elif tokens[index].isnumeric():
-        temp = "stackPush( COUNT ," + tokens[index]
-        count = 1
-        index += 1
-        if tokens[index].isnumeric():
-            while True:
-                if tokens[index].isnumeric():
-                    temp += ","+tokens[index]
-                    count += 1
-                    index += 1
-                else:
-                    break
-        temp += ");\n"
-        temp = temp.replace(" COUNT ",str(count))
-        finalCode += temp
+print("Generating code...")
 
+template = """
+#include "stackmachine.c"
 
-    elif tokens[index] == "+":
-        finalCode += "stackAdd();\n"
-        index += 1
+"""
 
-    elif tokens[index] == "-":
-        finalCode += "stackSub();\n"
-        index += 1
+operations = {
+        "+": "stackAdd();",
+        "-": "stackSub();",
+        "/": "stackDiv();",
+        "*": "stackMul();",
+        }
+mainSize = ""
 
-    elif tokens[index] == "/":
-        finalCode += "stackDiv();\n"
-        index += 1
+for i in range(len(ast)):
+    if ast[i]["type"] == "function":
+        temp = ""
+        temp += "void cf_"+str(ast[i]["name"])+"() {\n"
+        if ast[i]["name"] == "main":
+            mainSize = ast[i]["stack"]
+        k = ast[i]["ast"]
+        for j in range(len(k)):
+            if k[j]["type"] == "push":
+                op = "stackPush({C}, "
+                count = 1
+                op += str(k[j]["value"])
+                try:
+                    while k[j+1]["type"] == "push":
+                        op += ", "
+                        op += str(k[j+1]["value"])
+                        count += 1
+                        j += 1
+                except:
+                    pass
+                op += ");\n"
+                op = op.replace("{C}",str(count));
+                temp += op
 
-    elif tokens[index] == "*":
-        finalCode += "stackMul();\n"
-        index += 1
+            if k[j]["type"] == "operation":
+                temp += str(operations.get(k[j]["operation"])) + "\n"
 
-    elif tokens[index] == "swap":
-        finalCode += "stackSwap();\n"
-        index += 1
+            if k[j]["type"] == "functionCall":
+                func = k[j]["function"]
+                for i in functionTable:
+                    if i == func:
+                        temp += func+"();\n"
+                        break;
+                    elif i == "cf_"+func:
+                        temp += "cf_"+func+"();\n"
+                        break;
 
-    elif tokens[index] == "drop":
-        finalCode += "stackDrop();\n"
-        index += 1
+        template += temp + "}\n"
 
-    elif tokens[index] == "dup":
-        finalCode += "stackDup();\n"
-        index +=1
+template += """
+int main() {
+    initRuntime({SIZE});
+    cf_main();
+}
+""".replace("{SIZE}",mainSize)
 
-    elif tokens[index] == "popPrint":
-        finalCode += "popPrint();\n"
-        index += 1
-
-    elif tokens[index] == "dumpStack":
-        finalCode += "dumpStack();\n"
-        index += 1
-
-    else:
-        finalCode += tokens[index] + "();\n"
-        index += 1
-
-print(finalCode)
+print(template);
 
 outfile = open("compilerout.c","w")
-outfile.write(finalCode)
+outfile.write(template)
 outfile.close()
 
 print("Compiling...")

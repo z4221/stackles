@@ -4,21 +4,21 @@ func test 0 > 0 : 5 begin
     2
     42 /
     dumpStack
-end
+endfunc
 
 /* silly add function for testing */
 func add 2 > 1 : 2 begin
     +
 endfunc
 
-func fib 1 > 1 begin
+func fib 1 > 1 : 2 begin
     if <= 0 then
         return 1
     end
     dup 1 - fib 2 - fib +
 endfunc
 
-func main 0 > 0 : 1024*8 begin
+func main 0 > 0 : 1024 begin
     /* operator tests */
     10 20 + popPrint
     10 20 - popPrint
