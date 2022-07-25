@@ -305,7 +305,71 @@ pprint(functionTable)
 
 print("Generating code...")
 
-for i in ast:
-	if i["type"] != "function":
+code = """
+global _start
+
+section .bss
+callStackBegin:
+	resq 1024
+callStackEnd:
+
+section .text
+_start:
+	call main
+	mov rax, 60
+	pop rdi
+	syscall
+
+"""
+
+def parseOpt(operation):
+	code = ""
+	if operation == "+":
+		code += "pop r10\n"
+		code += "add [rsp], r10\n"
+	if operation == "-":
+		code += "pop r10\n"
+		code += "sub [rsp], r10\n"
+	if operation == "*":
+		code += "pop rax\n"
+		code += "pop r10\n"
+		code += "mul r10\n"
+		code += "push rax\n"
+	if operation == "/":
+		code += "xor rdx, rdx\n"
+		code += "pop r10\n"
+		code += "pop rax\n"
+		code += "div r10\n"
+		code += "push rax\n"
+	return code
+
+for node in ast:
+	if node["type"] != "function":
 		print("Operations must be inside a function!")
 		exit(1)
+
+	for i in node:
+		if i == "name":
+			code += node[i] + ":\n"
+		if i == "ast":
+			code += "pop r11\n"
+			for i in node["ast"]:
+				if i["type"] == "push":
+					code += "mov r10, " + str(i["value"]) + "\n"
+					code += "push r10\n"
+
+				if i["type"] == "operation":
+					code += parseOpt(i["operation"])
+
+			code += "push r11\nret\n"
+		
+
+outfile = open(args[1].replace(".cofb",".asm"),"w")
+outfile.write(code)
+outfile.close()
+object = args[1].replace(".cofb",".o")
+
+if os.system("nasm -f elf64 -o {1} {2}"
+		.replace("{1}",object)
+		.replace("{2}",args[1].replace(".cofb",".asm"))) == 0:
+	os.system("ld.lld -o {1} {2}".replace("{1}",object.replace(".o","")).replace("{2}",object))

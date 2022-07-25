@@ -1,0 +1,4 @@
+
+func main 0 > 1 : 1024 begin
+	10 2 /
+endfunc
