@@ -488,14 +488,14 @@ for node in ast:
 			code += loadReturn
 		
 
-outfile = open(args[1].replace(".cofb",".asm"),"w")
+outfile = open(args[1].replace(".stackles",".asm"),"w")
 outfile.write(code)
 outfile.close()
-object = args[1].replace(".cofb",".o")
+object = args[1].replace(".stackles",".o")
 
 if os.system("nasm -f elf64 -o {1} {2}"
 		.replace("{1}",object)
-		.replace("{2}",args[1].replace(".cofb",".asm"))) == 0:
+		.replace("{2}",args[1].replace(".stackles",".asm"))) == 0:
 	os.system("ld.lld -o {1} {2}"
 			.replace("{1}",object.replace(".o",""))
 			.replace("{2}",object))

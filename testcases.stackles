@@ -1,0 +1,70 @@
+/* functions are pure anarchy and do what they want good luck */
+func add begin
+	+
+endfunc
+
+func fib begin
+	/* _ is used to reference an item at the top of the stack */
+	if _ <= 0 then
+		1 ret
+	end
+	dup 1 - fib 2 - fib +
+endfunc
+
+func main 0 > 0 : 1024 begin
+	/* operator tests */
+	10 20 + popPrint
+	10 20 - popPrint
+	10 20 / popPrint
+	10 20 * popPrint
+
+	/* branching tests */
+	10 10 -
+	if _ != 0 then
+		4221 popPrint
+	else
+		1224 popPrint
+	end
+
+	0
+	if _ != 0 then
+		0 popPrint
+	end
+
+	0
+	if _ != 1 then
+		1 popPrint
+	end
+
+	if 0 != 1 then
+		0
+	elif 1 == 15 then
+		0
+	elif 1 == 32 then
+		0
+	end
+
+	if _ < 10 then
+		0
+	end
+
+	if _ > 10 then
+		0
+	end
+	
+	if _>10 then
+		0
+	end
+
+	if _<10 then
+		0
+	end
+
+	/* function call test */
+	test
+
+	10 fib
+
+	/* another function call test */
+	10 10 add popPrint
+endfunc

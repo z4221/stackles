@@ -1,0 +1,26 @@
+func exitOK begin
+	0 exit
+endfunc
+
+func main begin
+	10 10 + printInt drop
+	10 10 - printInt drop
+	10 10 / printInt drop
+	10 10 * printInt drop
+
+	10 dup drop printInt
+
+	10	
+!loop
+	printInt
+	asm
+dec qword [rsp].
+cmp qword [rsp], qword 0.
+je en.
+	endasm
+
+	goto loop
+!en
+
+	exitOK
+endfunc
