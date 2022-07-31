@@ -1,8 +1,0 @@
-func cool 1 > 2 : 1024 begin
-    10
-endfunc
-
-func main 0 > 1 : 1024 begin
-    cool
-    popPrint
-endfunc
